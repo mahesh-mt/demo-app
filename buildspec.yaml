@@ -1,4 +1,4 @@
-version: 0.2
+hoversion: 0.2
 
 phases:
   install:
@@ -13,7 +13,7 @@ phases:
       - cp index.html /var/www/html/
   post_build:
     commands:
-      - Configuring NGINX
+      - echo Configuring NGINX
 
 artifacts:
   files:
