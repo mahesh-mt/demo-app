@@ -1,24 +1,47 @@
 version: 0.2
 
 phases:
-  install:
+  pre_build:
     commands:
-      - echo "installing NGINX on AL2"
-      - sudo yum update -y
-      # NGINX is provided via amazon-linux-extras on AL2
-      - sudo amazon-linux-extras enable nginx1
-      - sudo yum install -y nginx
-      - sudo systemctl enable --now nginx
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $ECR_REPO_URI
+      - export IMAGE_TAG=$(date +%Y%m%d%H%M%S)
+      - echo "Image tag is $IMAGE_TAG"
   build:
     commands:
-      - echo "Build started on `date`"
-      # Use Amazon Linux's default NGINX web root
-      - sudo cp -v index.html /usr/share/nginx/html/
-      - sudo systemctl reload nginx
+      - echo building application
+      - mvn clean install
+      - echo Building Docker image...
+      - docker build -t $REPO_NAME .
+      - docker tag $REPO_NAME:latest $ECR_REPO_URI:$IMAGE_TAG
+      - docker tag $REPO_NAME:latest $ECR_REPO_URI:latest
   post_build:
     commands:
-      - echo "Configured NGINX"
-
+      - echo Pushing Docker images to ECR...
+      - docker push $ECR_REPO_URI:$IMAGE_TAG
+      - docker push $ECR_REPO_URI:latest
+      - echo Writing image definitions...
+      - printf '[{"name":"BHFL-Escrow-Portal-Backend-UAT-Container","imageUri":"%s"}]' $ECR_REPO_URI:$IMAGE_TAG > imagedefinitions.json
+      - echo "Generating AppSpec.json..."
+      - |
+        printf '{
+          "version": 1,
+          "Resources": [
+            {
+              "TargetService": {
+                "Type": "AWS::ECS::Service",
+                "Properties": {
+                  "TaskDefinition": "%s",
+                  "LoadBalancerInfo": {
+                    "ContainerName": "%s",
+                    "ContainerPort": %d
+                  }
+                }
+              }
+            }
+          ]
+        }' "$TASK_DEFINITION_ARN" "$CONTAINER_NAME" $CONTAINER_PORT > AppSpec.json
 artifacts:
   files:
-    - '**/*'
+    - imagedefinitions.json
+    - AppSpec.json
