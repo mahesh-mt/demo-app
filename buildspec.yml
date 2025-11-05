@@ -1,18 +1,23 @@
 version: 0.2
+
 phases:
   install:
     commands:
-      - echo "installing NGINX"
-      - apt-get update
-      - apt-get install nginx -y
-
+      - echo "installing NGINX on AL2"
+      - sudo yum update -y
+      # NGINX is provided via amazon-linux-extras on AL2
+      - sudo amazon-linux-extras enable nginx1
+      - sudo yum install -y nginx
+      - sudo systemctl enable --now nginx
   build:
     commands:
-      - echo Build sterted on `date`
-      - cp index.html /var/www/html/
+      - echo "Build started on `date`"
+      # Use Amazon Linux's default NGINX web root
+      - sudo cp -v index.html /usr/share/nginx/html/
+      - sudo systemctl reload nginx
   post_build:
     commands:
-      - echo Configuring NGINX
+      - echo "Configured NGINX"
 
 artifacts:
   files:
