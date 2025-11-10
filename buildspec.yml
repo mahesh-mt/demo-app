@@ -13,18 +13,6 @@ phases:
       - sudo apt-get update
       - sudo apt-get install nginx -y
 
-# Install Nginx
-      - sudo yum install nginx -y
-
-# Start the Nginx service
-      - sudo systemctl start nginx
-
-# Enable Nginx to start on boot
-      - sudo systemctl enable nginx
-
-# Check Nginx status
-      - sudo systemctl status nginx
-
   build:
     commands:
       - echo Build sterted on `date`
