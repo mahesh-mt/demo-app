@@ -10,8 +10,8 @@ phases:
   install:
     commands:
       - echo "installing NGINX"
-      # Enable the Nginx package from Amazon Linux Extras
-      - sudo amazon-linux-extras enable nginx1
+      - sudo apt-get update
+      - sudo apt-get install nginx -y
 
 # Install Nginx
       - sudo yum install nginx -y
